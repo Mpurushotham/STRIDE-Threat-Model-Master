@@ -556,4 +556,128 @@ class ThreatModelerApp {
                                         onclick="app.toggleMitigation('${t.id}')"
                                         class="px-3 py-1.5 text-xs font-bold rounded transition-colors ${
                                             t.mitigated
-                                                ? 'bg-s
+                                                ? 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                                : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                        }"
+                                    >
+                                        ${t.mitigated ? 'Undo' : 'Apply Fix'}
+                                    </button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 flex flex-col justify-center items-center text-center">
+                    <h3 class="text-lg font-bold text-white mb-4">Impact Preview</h3>
+                    <div class="w-full max-w-xs bg-slate-700 rounded-full h-4 overflow-hidden mb-2">
+                        <div 
+                            class="bg-emerald-500 h-full transition-all duration-1000 ease-out"
+                            style="width: ${securityScore}%"
+                        ></div>
+                    </div>
+                    <p class="text-slate-400 text-sm">
+                        System Security Score: <span class="text-white font-bold">${securityScore}/100</span>
+                    </p>
+                    <div class="mt-8 p-4 bg-slate-800 rounded text-xs text-slate-400 text-left w-full">
+                        <strong>Changes applied:</strong>
+                        <ul class="list-disc pl-4 mt-2 space-y-1">
+                            ${this.threats.filter(t => t.mitigated).map(t => `
+                                <li class="text-emerald-400">Applied ${t.mitigation.split('.')[0]}</li>
+                            `).join('')}
+                            ${this.threats.filter(t => !t.mitigated).length > 0 ? `
+                                <li class="text-red-400 italic">
+                                    ${this.threats.filter(t => !t.mitigated).length} vulnerabilities remaining.
+                                </li>
+                            ` : ''}
+                        </ul>
+                    </div>
+                    <button 
+                        onclick="app.setPhase('reporting')" 
+                        class="mt-6 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    >
+                        View Security Report &rarr;
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderReportingPhase() {
+        const mitigatedCount = this.threats.filter(t => t.mitigated).length;
+        const totalThreats = this.threats.length;
+        const securityScore = Math.round((mitigatedCount / totalThreats) * 100);
+
+        return `
+            <div class="max-w-3xl mx-auto bg-white text-slate-900 p-8 rounded-xl shadow-2xl">
+                <div class="flex justify-between items-start border-b-2 border-slate-200 pb-6 mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold text-slate-800">Threat Model Assessment</h1>
+                        <p class="text-slate-500 mt-1">Project: Connected Vehicle Telemetry V1.0</p>
+                    </div>
+                    <div class="text-right px-4 py-2 rounded-lg ${
+                        securityScore === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'
+                    }">
+                        <div class="text-xs font-bold uppercase tracking-wider">Score</div>
+                        <div class="text-2xl font-black">${securityScore}%</div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <section>
+                        <h3 class="text-lg font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2">Executive Summary</h3>
+                        <p class="text-sm text-slate-600 leading-relaxed">
+                            The threat model for the Car Telemetry system identified <strong>${totalThreats}</strong> critical threats across STRIDE categories. 
+                            Currently, <strong>${mitigatedCount}</strong> threats have been mitigated through architectural controls.
+                            ${securityScore < 100 ? " Immediate attention is required for the remaining vulnerabilities." : " The system architecture meets the baseline security requirements."}
+                        </p>
+                    </section>
+
+                    <section>
+                        <h3 class="text-lg font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2">Detailed Findings</h3>
+                        <div class="space-y-4">
+                            ${this.threats.map(t => `
+                                <div class="flex gap-4 text-sm">
+                                    <div class="w-16 flex-shrink-0 font-mono font-bold ${
+                                        t.mitigated ? 'text-emerald-600' : 'text-red-600'
+                                    }">
+                                        ${t.id}
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="font-bold text-slate-700">${t.title}</div>
+                                        <div class="text-slate-500 mt-1">
+                                            <span class="font-semibold">Mitigation:</span> ${t.mitigation}
+                                        </div>
+                                    </div>
+                                    <div class="w-24 text-right">
+                                        ${t.mitigated ? 
+                                            '<span class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded text-xs font-bold">Resolved</span>' :
+                                            '<span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-bold">Open</span>'
+                                        }
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </section>
+
+                    <div class="pt-8 mt-8 border-t border-slate-200 text-center">
+                        <button 
+                            onclick="window.print()" 
+                            class="bg-slate-900 text-white px-6 py-2 rounded hover:bg-slate-700 transition-colors"
+                        >
+                            Print Report
+                        </button>
+                        <button 
+                            onclick="app.setPhase('definition')" 
+                            class="ml-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+                        >
+                            Start Over
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+}
+
+// Make app globally available
+window.ThreatModelerApp = ThreatModelerApp;
