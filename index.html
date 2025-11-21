@@ -7,6 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    animation: {
+                        'fadeIn': 'fadeIn 0.5s ease-out',
+                        'slideIn': 'slideIn 0.6s ease-out',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' }
+                        },
+                        slideIn: {
+                            '0%': { opacity: '0', transform: 'translateY(20px) scale(0.95)' },
+                            '100%': { opacity: '1', transform: 'translateY(0) scale(1)' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 <body class="min-h-screen flex flex-col font-sans bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
     <!-- Enhanced Header -->
@@ -17,7 +41,7 @@
                     <span class="text-white font-bold text-lg">🛡️</span>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-white tracking-tight">STRIDE <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Threat Model</span></h1>
+                    <h1 class="text-xl font-bold text-white tracking-tight">STRIDE <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Threat Modeler</span></h1>
                     <p class="text-xs text-slate-400">Automotive Cyber Security Framework</p>
                 </div>
             </div>
@@ -38,12 +62,16 @@
     <main class="flex-1 p-4 md:p-8 overflow-y-auto">
         <div class="max-w-7xl mx-auto">
             
-            <!-- Enhanced Phase Navigation -->
+            <!-- Phase Navigation -->
             <div id="phaseNavigation" class="mb-8">
-                <!-- Dynamically populated by JavaScript -->
+                <!-- Loading placeholder -->
+                <div class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+                    <p class="text-slate-400 mt-2">Loading Threat Modeler...</p>
+                </div>
             </div>
 
-            <!-- Enhanced Diagram Section -->
+            <!-- Diagram Section -->
             <section id="diagramSection" class="mb-8">
                 <div class="flex items-center justify-between mb-4">
                     <h2 class="text-lg font-bold text-white flex items-center gap-2">
@@ -65,12 +93,25 @@
                         </div>
                     </div>
                 </div>
-                <div id="diagramContainer"></div>
+                <div id="diagramContainer">
+                    <!-- Diagram will be rendered here -->
+                    <div class="w-full h-80 bg-slate-900 rounded-xl border border-slate-700 flex items-center justify-center">
+                        <div class="text-center">
+                            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+                            <p class="text-slate-400">Loading architecture diagram...</p>
+                        </div>
+                    </div>
+                </div>
             </section>
 
-            <!-- Enhanced Main Content Area -->
+            <!-- Main Content Area -->
             <div id="mainContent" class="min-h-[500px]">
-                <!-- Content populated by JavaScript based on phase -->
+                <!-- Content will be populated by JavaScript -->
+                <div class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+                    <h3 class="text-xl font-bold text-slate-400 mb-2">Initializing Threat Modeler</h3>
+                    <p class="text-slate-500">Loading security framework and threat data...</p>
+                </div>
             </div>
 
         </div>
@@ -85,7 +126,7 @@
                     STRIDE Threat Modeler v2.0 | Automotive Security Framework
                 </div>
                 <div class="flex items-center gap-4 text-slate-500 text-sm">
-                    <span>Based on Microsoft STRIDE Framework</span>
+                    <span>Author: Purushotham Muktha - Based on Microsoft STRIDE Framework</span>
                     <div class="w-px h-4 bg-slate-600"></div>
                     <span>ISO 21434 | SAE J3061 Compliant</span>
                 </div>
@@ -93,7 +134,35 @@
         </div>
     </footer>
 
+    <!-- Load scripts in correct order -->
     <script src="data.js"></script>
     <script src="app.js"></script>
+    
+    <!-- Initialize app -->
+    <script>
+        // Global app instance
+        let app;
+        
+        // Initialize when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing Threat Modeler...');
+            try {
+                app = new ThreatModelerApp();
+                console.log('Threat Modeler initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize Threat Modeler:', error);
+                document.getElementById('mainContent').innerHTML = `
+                    <div class="bg-red-900/20 border border-red-500/50 rounded-xl p-6 text-center">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                        <h3 class="text-xl font-bold text-white mb-2">Initialization Error</h3>
+                        <p class="text-slate-300 mb-4">Failed to load the Threat Modeler application.</p>
+                        <button onclick="location.reload()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg">
+                            <i class="fas fa-redo mr-2"></i>Reload Application
+                        </button>
+                    </div>
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
