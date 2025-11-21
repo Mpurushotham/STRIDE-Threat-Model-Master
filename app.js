@@ -21,13 +21,15 @@ class ThreatModelerApp {
     init() {
         this.renderPhaseNavigation();
         this.renderCurrentPhase();
-        this.setupEventListeners();
+        this.renderDiagram();
     }
 
     setPhase(newPhase) {
         this.phase = newPhase;
+        this.activeCategory = null; // Reset active category when phase changes
         this.renderPhaseNavigation();
         this.renderCurrentPhase();
+        this.renderDiagram();
     }
 
     setActiveCategory(category) {
@@ -43,17 +45,17 @@ class ThreatModelerApp {
         this.saveThreats();
         this.renderCurrentPhase();
         this.renderDiagram();
+        this.renderPhaseNavigation(); // Update score
     }
 
     renderPhaseNavigation() {
-        const phases = ['definition', 'analysis', 'mitigation', 'reporting'];
         const container = document.getElementById('phaseNavigation');
         
         const mitigatedCount = this.threats.filter(t => t.mitigated).length;
         const totalThreats = this.threats.length;
         const securityScore = Math.round((mitigatedCount / totalThreats) * 100);
 
-        container.innerHTML = phases.map((phase, idx) => `
+        container.innerHTML = PHASES.map((phase, idx) => `
             <button
                 onclick="app.setPhase('${phase}')"
                 class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium capitalize transition-all whitespace-nowrap ${
@@ -88,26 +90,34 @@ class ThreatModelerApp {
         // Show/hide diagram based on phase
         diagramSection.style.display = this.phase === 'reporting' ? 'none' : 'block';
         
+        let content = '';
         switch(this.phase) {
             case 'definition':
-                container.innerHTML = this.renderDefinitionPhase();
+                content = this.renderDefinitionPhase();
                 break;
             case 'analysis':
-                container.innerHTML = this.renderAnalysisPhase();
-                this.renderDiagram();
+                content = this.renderAnalysisPhase();
                 break;
             case 'mitigation':
-                container.innerHTML = this.renderMitigationPhase();
+                content = this.renderMitigationPhase();
                 break;
             case 'reporting':
-                container.innerHTML = this.renderReportingPhase();
+                content = this.renderReportingPhase();
                 break;
         }
+        
+        container.innerHTML = content;
+        container.classList.add('animate-fadeIn');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            container.classList.remove('animate-fadeIn');
+        }, 500);
     }
 
     renderDefinitionPhase() {
         return `
-            <div class="space-y-6 animate-fadeIn">
+            <div class="space-y-6">
                 <div class="bg-slate-800/50 p-6 rounded-xl border border-slate-700">
                     <h2 class="text-2xl font-bold text-white mb-4">Vehicle-to-Cloud Telemetry Architecture</h2>
                     <p class="text-slate-300 mb-4 leading-relaxed">
@@ -161,7 +171,7 @@ class ThreatModelerApp {
                                 <div class="flex justify-between items-center">
                                     <span class="font-bold">${cat}</span>
                                     <span class="text-xs px-2 py-0.5 rounded ${
-                                        t?.impact === 'High' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'
+                                        t?.impact === 'High' ? 'bg-red-500/20 text-red-400' : t?.impact === 'Medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
                                     }">
                                         ${t?.impact}
                                     </span>
@@ -206,7 +216,6 @@ class ThreatModelerApp {
                     <p class="text-slate-300 text-sm">${threat.mitigation}</p>
                 </div>
 
-                <!-- Static AI Advisor Placeholder -->
                 <div class="mt-6">
                     <h4 class="text-blue-400 font-bold text-sm uppercase mb-4">Security Advisor</h4>
                     <div class="h-64 bg-slate-800 rounded-lg border border-slate-700 p-4 flex flex-col justify-center items-center text-center text-slate-400">
@@ -226,19 +235,176 @@ class ThreatModelerApp {
         
         const mitigatedThreatIds = this.threats.filter(t => t.mitigated).map(t => t.id);
 
-        // Complex SVG rendering logic would go here
-        // This is simplified - full implementation would mirror the React component
+        const isNodeActive = (id) => {
+            if (!activeThreat) return false;
+            return activeThreat.affectedComponents.includes(id);
+        };
+
+        const isLinkSecure = (source, target) => {
+            if (source === 'car-tcu' && target === 'network') {
+                return mitigatedThreatIds.includes('S-1') && mitigatedThreatIds.includes('T-1');
+            }
+            if (source === 'network' && target === 'cloud-gateway') {
+                return mitigatedThreatIds.includes('D-1');
+            }
+            if (source === 'cloud-gateway' && target === 'db') {
+                return mitigatedThreatIds.includes('I-1');
+            }
+            return false;
+        };
+
         container.innerHTML = `
             <div class="w-full h-80 bg-slate-900 rounded-xl border border-slate-700 overflow-hidden relative shadow-inner select-none">
-                <!-- Legend and SVG content would be generated here -->
-                <div class="h-full flex items-center justify-center text-slate-500">
-                    <p>Interactive diagram would render here with current threat analysis</p>
+                <!-- Legend -->
+                <div class="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-emerald-500"></div>
+                        <span class="text-xs text-slate-400">Secure Trust Zone</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                        <span class="text-xs text-slate-400">Public/Untrusted</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-1 bg-blue-500"></div>
+                        <span class="text-xs text-slate-400">Data Flow</span>
+                    </div>
                 </div>
+
+                <svg class="w-full h-full" viewBox="0 0 800 350">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                        </marker>
+                        <marker id="arrowhead-secure" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981" />
+                        </marker>
+                        <marker id="arrowhead-attack" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#ef4444" />
+                        </marker>
+                    </defs>
+
+                    <!-- Trust Boundaries -->
+                    <rect x="40" y="80" width="120" height="160" rx="10" fill="none" stroke="#fbbf24" stroke-dasharray="5,5" stroke-width="2" opacity="0.3" />
+                    <text x="100" y="70" text-anchor="middle" fill="#fbbf24" font-size="10" opacity="0.8" font-weight="bold">VEHICLE TRUST ZONE</text>
+
+                    <rect x="450" y="80" width="310" height="160" rx="10" fill="none" stroke="#3b82f6" stroke-dasharray="5,5" stroke-width="2" opacity="0.3" />
+                    <text x="605" y="70" text-anchor="middle" fill="#3b82f6" font-size="10" opacity="0.8" font-weight="bold">CLOUD TRUST ZONE</text>
+
+                    <rect x="220" y="100" width="180" height="200" rx="20" fill="#ef4444" opacity="0.05" />
+                    <text x="310" y="315" text-anchor="middle" fill="#ef4444" font-size="10" opacity="0.6" font-weight="bold">UNTRUSTED NETWORK</text>
+
+                    <!-- Links -->
+                    ${DIAGRAM_LINKS.map((link, idx) => {
+                        const sourceNode = DIAGRAM_NODES.find(n => n.id === link.source);
+                        const targetNode = DIAGRAM_NODES.find(n => n.id === link.target);
+                        const isAttack = sourceNode.id === 'attacker';
+                        const secure = isLinkSecure(link.source, link.target);
+                        
+                        const strokeColor = isAttack ? '#ef4444' : secure ? '#10b981' : '#64748b';
+                        const marker = isAttack ? 'url(#arrowhead-attack)' : secure ? 'url(#arrowhead-secure)' : 'url(#arrowhead)';
+                        
+                        return `
+                            <g>
+                                <path
+                                    d="M ${sourceNode.x + 30} ${sourceNode.y} L ${targetNode.x - 30} ${targetNode.y}"
+                                    stroke="${strokeColor}"
+                                    stroke-width="${isAttack ? 2 : 3}"
+                                    fill="none"
+                                    marker-end="${marker}"
+                                    class="transition-colors duration-500"
+                                />
+                                
+                                ${!isAttack ? `
+                                    <circle r="3" fill="${secure ? '#10b981' : '#3b82f6'}">
+                                        <animateMotion 
+                                            dur="${secure ? '1.5s' : '3s'}" 
+                                            repeatCount="indefinite"
+                                            path="M ${sourceNode.x + 30} ${sourceNode.y} L ${targetNode.x - 35} ${targetNode.y}"
+                                        />
+                                    </circle>
+                                ` : ''}
+
+                                <text 
+                                    x="${(sourceNode.x + targetNode.x) / 2}" 
+                                    y="${(sourceNode.y + targetNode.y) / 2 - 10}" 
+                                    text-anchor="middle" 
+                                    fill="${strokeColor}"
+                                    font-size="10"
+                                >
+                                    ${link.label}
+                                </text>
+                                
+                                ${secure ? `
+                                    <text 
+                                        x="${(sourceNode.x + targetNode.x) / 2 + 10}" 
+                                        y="${(sourceNode.y + targetNode.y) / 2 - 10}" 
+                                        font-size="12"
+                                    >🔒</text>
+                                ` : ''}
+                            </g>
+                        `;
+                    }).join('')}
+
+                    <!-- Nodes -->
+                    ${DIAGRAM_NODES.map((node) => {
+                        const isActive = isNodeActive(node.id);
+                        const isAttacker = node.id === 'attacker';
+                        
+                        let fill = '#1e293b';
+                        let stroke = '#475569';
+                        let icon = '';
+
+                        if (node.trustZone === 'car') { stroke = '#fbbf24'; icon = '🚗'; }
+                        else if (node.trustZone === 'cloud') { stroke = '#3b82f6'; icon = '⚙️'; }
+                        else if (node.type === 'datastore') { stroke = '#3b82f6'; icon = '💾'; }
+                        else if (isAttacker) { fill = '#450a0a'; stroke = '#ef4444'; icon = '🥷'; }
+                        else { stroke = '#94a3b8'; icon = '📡'; }
+
+                        if (isActive) {
+                            stroke = '#ef4444';
+                            fill = '#450a0a';
+                        }
+
+                        return `
+                            <g key="${node.id}" class="cursor-pointer transition-all duration-300">
+                                ${isActive ? `
+                                    <circle cx="${node.x}" cy="${node.y}" r="45" class="threat-pulse" />
+                                ` : ''}
+                                
+                                ${node.type === 'datastore' ? `
+                                    <g>
+                                        <path d="M ${node.x - 25} ${node.y - 20} h 50 v 40 h -50 Z" fill="${fill}" stroke="${stroke}" stroke-width="2" />
+                                        <line x1="${node.x - 25}" y1="${node.y - 10}" x2="${node.x + 25}" y2="${node.y - 10}" stroke="${stroke}" stroke-width="1" />
+                                    </g>
+                                ` : node.type === 'actor' || node.type === 'attacker' ? `
+                                    <rect x="${node.x - 25}" y="${node.y - 20}" width="50" height="40" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="2" />
+                                ` : `
+                                    <circle cx="${node.x}" cy="${node.y}" r="30" fill="${fill}" stroke="${stroke}" stroke-width="2" />
+                                `}
+
+                                <text 
+                                    x="${node.x}" 
+                                    y="${node.y + 50}" 
+                                    text-anchor="middle" 
+                                    fill="${isActive ? '#ef4444' : '#e2e8f0'}" 
+                                    font-size="11" 
+                                    font-weight="bold"
+                                >
+                                    ${node.label}
+                                </text>
+                                
+                                <text x="${node.x}" y="${node.y + 5}" text-anchor="middle" font-size="18" fill="#94a3b8">
+                                    ${icon}
+                                </text>
+                            </g>
+                        `;
+                    }).join('')}
+                </svg>
             </div>
         `;
     }
 
-    // Additional rendering methods for mitigation and reporting phases...
     renderMitigationPhase() {
         const mitigatedCount = this.threats.filter(t => t.mitigated).length;
         const totalThreats = this.threats.length;
@@ -307,6 +473,12 @@ class ThreatModelerApp {
                             ` : ''}
                         </ul>
                     </div>
+                    <button 
+                        onclick="app.setPhase('reporting')" 
+                        class="mt-6 bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                    >
+                        View Security Report &rarr;
+                    </button>
                 </div>
             </div>
         `;
@@ -376,6 +548,12 @@ class ThreatModelerApp {
                         >
                             Print Report
                         </button>
+                        <button 
+                            onclick="app.setPhase('definition')" 
+                            class="ml-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition-colors"
+                        >
+                            Start Over
+                        </button>
                     </div>
                 </div>
             </div>
@@ -383,5 +561,7 @@ class ThreatModelerApp {
     }
 }
 
-// Initialize the application
-const app = new ThreatModelerApp();
+// Initialize the application when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new ThreatModelerApp();
+});
